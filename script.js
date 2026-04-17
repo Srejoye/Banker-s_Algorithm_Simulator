@@ -241,3 +241,98 @@ function handleRequest() {
         renderDiff(pi, allocBefore, alloc, needBefore, needAfter, availBefore, avail, true);
     }
 }
+
+// Renders a visual diff panel showing matrix and available resource changes after a resource request
+function renderDiff(pi, allocBefore, allocAfter, needBefore, needAfter, availBefore, availAfter, denied = false) {
+    let p = allocBefore.length, r = availBefore.length;
+    let panel = document.getElementById('diffPanel');
+    panel.style.display = 'block';
+    panel.innerHTML = '';
+    let inner = document.createElement('div'); inner.className = 'diff-panel';
+    let header = document.createElement('div'); header.className = 'diff-header';
+    let title = document.createElement('div');
+    title.className = 'card-title';
+    title.style.cssText = 'margin:0;padding:0;border:none;';
+    title.innerHTML = `<span class="card-title-dot"></span>Matrix Changes After Request`;
+    let legend = document.createElement('div'); legend.className = 'diff-legend';
+    legend.innerHTML = `
+        <div class="legend-item"><span class="legend-dot legend-green"></span>Increased</div>
+        <div class="legend-item"><span class="legend-dot legend-red"></span>Decreased</div>
+        <div class="legend-item"><span class="legend-dot legend-same"></span>Unchanged</div>`;
+    header.appendChild(title); header.appendChild(legend);
+    inner.appendChild(header);
+    let tag = document.createElement('div'); tag.className = 'diff-process-tag';
+    tag.innerHTML = `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Process P${pi} ${denied ? '(DENIED — preview only)' : '— Changes Applied'}`;
+    inner.appendChild(tag);
+    let container = document.createElement('div'); container.className = 'diff-matrices';
+    inner.appendChild(container);
+    const matrices = [
+        { title: 'Allocation', before: allocBefore, after: allocAfter },
+        { title: 'Maximum',    before: allocBefore.map((row, i) => row.map((v, j) => v + needBefore[i][j])),
+                               after:  allocAfter.map((row, i)  => row.map((v, j) => v + needAfter[i][j])) },
+        { title: 'Need',       before: needBefore,  after: needAfter },
+    ];
+    matrices.forEach(m => {
+        let hasChanges = m.before.some((row, i) => row.some((v, j) => v !== m.after[i][j]));
+        let card = document.createElement('div');
+        card.className = 'diff-matrix-card' + (hasChanges ? ' has-changes' : '');
+        let titleEl = document.createElement('div'); titleEl.className = 'diff-matrix-title';
+        titleEl.innerText = m.title; card.appendChild(titleEl);
+        let table = document.createElement('table'); table.className = 'diff-table';
+        let thead = document.createElement('thead');
+        let hr = document.createElement('tr');
+        let eth = document.createElement('th'); hr.appendChild(eth);
+        for (let j = 0; j < r; j++) { let th = document.createElement('th'); th.innerText = 'R' + j; hr.appendChild(th); }
+        thead.appendChild(hr); table.appendChild(thead);
+        let tbody = document.createElement('tbody');
+        for (let i = 0; i < p; i++) {
+            let row = document.createElement('tr');
+            let ltd = document.createElement('td'); ltd.className = 'diff-row-lbl'; ltd.innerText = 'P' + i; row.appendChild(ltd);
+            for (let j = 0; j < r; j++) {
+                let td = document.createElement('td'); td.className = 'diff-cell';
+                let bv = m.before[i][j], av = m.after[i][j];
+                let changed = bv !== av;
+                let valDiv = document.createElement('div');
+                valDiv.className = 'diff-val' + (!changed ? ' unchanged' : (av > bv ? ' changed-up' : ' changed-down'));
+                if (changed) {
+                    let os = document.createElement('span'); os.className = 'old-val'; os.innerText = bv;
+                    let ns = document.createElement('span'); ns.className = 'new-val'; ns.innerText = av;
+                    valDiv.appendChild(os); valDiv.appendChild(ns);
+                } else {
+                    let ns = document.createElement('span'); ns.className = 'new-val'; ns.innerText = av;
+                    valDiv.appendChild(ns);
+                }
+                td.appendChild(valDiv); row.appendChild(td);
+            }
+            tbody.appendChild(row);
+        }
+        table.appendChild(tbody); card.appendChild(table);
+        container.appendChild(card);
+    });
+    let availHdr = document.createElement('div');
+    availHdr.style.cssText = 'width:100%;font-family:var(--f-mono);font-size:9px;font-weight:700;letter-spacing:0.10em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;margin-top:12px;';
+    availHdr.innerText = 'Available Resources';
+    inner.appendChild(availHdr);
+    let availContainer = document.createElement('div'); availContainer.className = 'avail-diff-row';
+    for (let j = 0; j < r; j++) {
+        let bv = availBefore[j], av = availAfter[j];
+        let changed = bv !== av;
+        let chip = document.createElement('div'); chip.className = 'avail-diff-chip';
+        let lbl = document.createElement('span'); lbl.className = 'avail-diff-label'; lbl.innerText = 'R' + j;
+        let val = document.createElement('div');
+        val.className = 'avail-diff-val' + (!changed ? ' unchanged' : (av > bv ? ' changed-up' : ' changed-down'));
+        if (changed) {
+            let os = document.createElement('span'); os.className = 'old-val'; os.innerText = bv;
+            let ns = document.createElement('span'); ns.className = 'new-val'; ns.innerText = av;
+            val.appendChild(os); val.appendChild(ns);
+        } else {
+            let ns = document.createElement('span'); ns.className = 'new-val'; ns.innerText = av;
+            val.appendChild(ns);
+        }
+        chip.appendChild(lbl); chip.appendChild(val);
+        availContainer.appendChild(chip);
+    }
+    inner.appendChild(availContainer);
+    panel.appendChild(inner);
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
