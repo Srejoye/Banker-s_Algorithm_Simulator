@@ -202,3 +202,42 @@ function generateRequestSection(p, r) {
         let inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.value = '0'; rd.appendChild(inp);
     }
 }
+
+// Reads a matrix table by ID and returns its values as a 2D array
+function getMatrix(id) {
+    let t = document.getElementById(id), m = [];
+    for (let i = 0; i < t.tBodies[0].rows.length; i++) {
+        let row = [], cells = t.tBodies[0].rows[i].cells;
+        for (let j = 1; j < cells.length; j++) row.push(parseInt(cells[j].children[0].value) || 0);
+        m.push(row);
+    }
+    return m;
+}
+
+// Returns the current available resources as an array from the available inputs
+function getAvailable() {
+    return Array.from(document.querySelectorAll('#available-section .avail-input')).map(i => parseInt(i.value) || 0);
+}
+
+// Validates and processes a resource request using the Banker's Algorithm safety check
+function handleRequest() {
+    let pi = parseInt(document.getElementById('processSelect').value);
+    let allocBefore = getMatrix('allocation-table'), max = getMatrix('maximum-table'), availBefore = getAvailable();
+    let req = Array.from(document.querySelectorAll('#requestInputs input')).map(i => parseInt(i.value) || 0);
+    let p = allocBefore.length, r = availBefore.length;
+    let needBefore = allocBefore.map((row, i) => row.map((v, j) => max[i][j] - v));
+    let alloc = allocBefore.map(r => [...r]);
+    let avail = [...availBefore];
+    let need  = needBefore.map(r => [...r]);
+    for (let j = 0; j < r; j++) { if (req[j] > need[pi][j]) { showStatus('✕  Request exceeds process need!', false); return; } }
+    for (let j = 0; j < r; j++) { if (req[j] > avail[j])    { showStatus('✕  Not enough available resources!', false); return; } }
+    for (let j = 0; j < r; j++) { avail[j] -= req[j]; alloc[pi][j] += req[j]; need[pi][j] -= req[j]; }
+    let needAfter = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
+    if (checkSafety(alloc, need, avail)) {
+        showStatus('✓  Request GRANTED — system remains safe.', true);
+        renderDiff(pi, allocBefore, alloc, needBefore, needAfter, availBefore, avail);
+    } else {
+        showStatus('✕  Request DENIED — system would become unsafe.', false);
+        renderDiff(pi, allocBefore, alloc, needBefore, needAfter, availBefore, avail, true);
+    }
+}
