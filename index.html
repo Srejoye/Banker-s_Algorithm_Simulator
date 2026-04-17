@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> Banker's Algorithm Simulator </title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <nav class="navbar">
+    <a class="nav-brand" href="#">
+      <div class="nav-brand-icon"> ⚙ </div>
+      OS Resource Simulator
+    </a>
+    <div class="nav-tabs">
+      <button class="nav-tab active"> Simulator </button>
+      <button class="nav-tab" onclick="scrollToSection('sim-section')"> Deadlock Analysis </button>
+      <button class="nav-tab" onclick="scrollToSection('rag-section')"> Graph View </button>
+      <button class="nav-tab" onclick="alert('Coming soon: Theory + interactive learning modules!')">Learn</button>
+    </div>
+    <div class="nav-right">
+      <span class="nav-badge"> v1.0 </span>
+      <span class="nav-badge"> Banker's Algo </span>
+    </div>
+  </nav>
+
+  <div class="page-wrap">
+
+    <section class="hero">
+      <div class="hero-left">
+        <div class="hero-eyebrow">
+          <span class="pulse-dot"></span>
+          Operating Systems · Deadlock Avoidance
+        </div>
+        <h1> Banker's <br><span> Algorithm </span><br> Simulator </h1>
+        <p class="hero-sub"> An interactive visualizer for safe resource allocation, deadlock detection and recovery in operating systems. </p>
+        <div class="hero-tags">
+          <span class="hero-tag"> Safety Algorithm </span>
+          <span class="hero-tag"> Resource Allocation </span>
+          <span class="hero-tag"> Deadlock Detection </span>
+          <span class="hero-tag"> Need Matrix </span>
+          <span class="hero-tag"> RAG Visualization </span>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="stat-card">
+          <div class="stat-label"> Algorithm </div>
+          <div class="stat-value" style="font-size:16px;color:var(--indigo);"> Banker's </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"> Mode </div>
+          <div class="stat-value" style="font-size:16px;color:var(--teal);"> Interactive </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label"> Safety Check Complexity </div>
+          <div class="stat-value" style="font-size:16px;color:var(--violet);"> O(n²m) </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept-strip">
+      <div class="concept-card">
+        <div class="concept-num"> ➤ STEP 01 </div>
+        <span class="concept-icon"> ⚙️ </span>
+        <div class="concept-title"> Configure </div>
+        <div class="concept-desc"> Set processes and resource types for your system. </div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-num"> ➤ STEP 02 </div>
+        <span class="concept-icon"> 📊 </span>
+        <div class="concept-title"> Fill Matrices </div>
+        <div class="concept-desc"> Enter Allocation & Maximum. Need is auto-calculated. </div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-num"> ➤ STEP 03 </div>
+        <span class="concept-icon"> ▶️ </span>
+        <div class="concept-title"> Run Algorithm </div>
+        <div class="concept-desc"> Watch safety algorithm execute step by step. </div>
+      </div>
+      <div class="concept-card">
+        <div class="concept-num"> ➤ STEP 04 </div>
+        <span class="concept-icon"> ✅ </span>
+        <div class="concept-title"> Inspect Result </div>
+        <div class="concept-desc"> View safe sequence or identify deadlocked processes. </div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>
