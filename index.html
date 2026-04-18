@@ -86,6 +86,98 @@
         <div class="concept-desc"> View safe sequence or identify deadlocked processes. </div>
       </div>
     </section>
+
+    <div class="app-layout">
+      <aside class="sidebar">
+
+        <section class="card">
+          <div class="card-title">
+            <span class="card-title-dot"></span>
+            Configuration
+          </div>
+          <div class="field">
+            <label class="field-label" data-tip="Number of processes in the system"> Processes (n) </label>
+            <input type="number" id="processes" class="field-input" min="1" placeholder="e.g. 5">
+          </div>
+          <div class="field">
+            <label class="field-label" data-tip="Number of distinct resource types available"> Resource Types (m) </label>
+            <input type="number" id="resources" class="field-input" min="1" placeholder="e.g. 3">
+          </div>
+          <button class="btn btn-primary" onclick="generateTables()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Generate Tables
+          </button>
+        </section>
+
+        <section class="card" id="sim-controls-card" style="display:none; opacity:0; transform:translateY(16px); transition: opacity 0.4s var(--ease-expo), transform 0.4s var(--ease-expo);">
+          <div class="card-title">
+            <span class="card-title-dot" style="background:var(--violet);"></span>
+            Simulation
+          </div>
+          <div class="speed-row">
+            <span class="speed-label"> Speed </span>
+            <input type="range" id="speedControl" min="200" max="2000" value="1000" step="100">
+            <span id="speedValue"> 1.0s </span>
+          </div>
+          <button id="runBtn" class="btn btn-run" onclick="startSimulation()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg>
+            Run Safety Algorithm
+          </button>
+          <button class="btn btn-secondary" onclick="runDeadlockDetection()" style="margin-top:8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Detect Deadlock
+          </button>
+          <button class="btn btn-secondary" onclick="resetSimulation()" style="margin-top:8px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            Reset
+          </button>
+        </section>
+
+        <section class="card" id="req-card" style="display:none; opacity:0; transform:translateY(16px); transition: opacity 0.4s var(--ease-expo) 0.08s, transform 0.4s var(--ease-expo) 0.08s;">
+          <div class="card-title">
+            <span class="card-title-dot" style="background:var(--violet);"></span>
+            Resource Request
+          </div>
+          <span class="req-label"> Process </span>
+          <select id="processSelect"></select>
+          <span class="req-label"> Request Vector </span>
+          <div id="requestInputs"></div>
+          <button class="btn btn-primary" onclick="handleRequest()" style="background:var(--violet);box-shadow:0 2px 8px rgba(124,58,237,0.25);">
+            Submit Request
+          </button>
+          <div id="statusBox"></div>
+        </section>
+
+      </aside>
+
+      <div class="main-content">
+        <div id="tables-section"></div>
+        <div id="sim-section" style="display:none;">
+          <div id="diffPanel" style="display:none;"></div>
+          <div id="output" style="display:none;"></div>
+          <div class="rag-container" id="rag-section" style="display:none;">
+            <div class="rag-header">
+              <div class="card-title" style="margin:0;padding:0;border:none;">
+                <span class="card-title-dot" style="background:var(--teal);"></span>
+                Resource Allocation Graph
+              </div>
+              <div class="rag-legend">
+                <div class="rag-legend-item">
+                  <div class="rag-legend-line" style="background:#16a34a;height:3px;"></div>
+                  <span><b> Allocation: </b> Resource → Process </span>
+                </div>
+                <div class="rag-legend-item">
+                  <div class="rag-legend-line" style="background:#dc2626;height:3px;"></div>
+                  <span><b> Request: </b> Process → Resource </span>
+                </div>
+              </div>
+            </div>
+            <canvas id="ragCanvas" width="720" height="460"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+  <script src="script.js" defer></script>
 </body>
 </html>
