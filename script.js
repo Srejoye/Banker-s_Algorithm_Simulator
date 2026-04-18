@@ -481,3 +481,139 @@ function simulateSafety(alloc, need, avail, callback) {
     }
     nextStep();
 }
+
+// Runs the safety algorithm and returns deadlocked processes, safe sequence, and block reasons
+function detectDeadlockDetailed(alloc, max, avail) {
+    let p = alloc.length, r = avail.length;
+    let need = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
+    let work = [...avail], finish = new Array(p).fill(false), sequence = [];
+    while (true) {
+        let found = false;
+        for (let i = 0; i < p; i++) {
+            if (!finish[i] && need[i].every((n, j) => n <= work[j])) {
+                for (let j = 0; j < r; j++) work[j] += alloc[i][j];
+                finish[i] = true; sequence.push('P' + i); found = true;
+            }
+        }
+        if (!found) break;
+    }
+    let deadlocked = [], blockedReasons = [];
+    for (let i = 0; i < p; i++) {
+        if (!finish[i]) {
+            deadlocked.push('P' + i);
+            let reason = need[i].map((n, j) => {
+                if (n > work[j]) return `R${j} needed ${n}, available ${work[j]}`;
+            }).filter(Boolean);
+            blockedReasons.push({ process: 'P' + i, reasons: reason });
+        }
+    }
+    return { deadlocked, sequence, blockedReasons };
+}
+
+// Runs deadlock detection, draws the RAG, and renders a detailed safe or deadlocked result panel
+function runDeadlockDetection() {
+    let alloc = getMatrix('allocation-table');
+    let max = getMatrix('maximum-table');
+    let avail = getAvailable();
+    let need = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
+    drawRAG(alloc, need);
+    document.getElementById('rag-section').style.display = 'block';
+    let result = detectDeadlockDetailed(alloc, max, avail);
+    let out = document.getElementById('output');
+    out.style.display = 'block';
+    out.innerHTML = '';
+    let wrapper = document.createElement('div'); wrapper.className = 'sim-output';
+    let hdr = document.createElement('div'); hdr.className = 'sim-output-header';
+    hdr.innerHTML = `<span class="card-title-dot" style="background:${result.deadlocked.length ? 'var(--red)' : 'var(--green)'}"></span><span class="sim-output-title">Deadlock Analysis</span>`;
+    wrapper.appendChild(hdr);
+    let body = document.createElement('div'); body.className = 'sim-output-body';
+    wrapper.appendChild(body);
+    out.appendChild(wrapper);
+    if (result.deadlocked.length === 0) {
+        let rb = document.createElement('div'); rb.className = 'result-box result-safe';
+        rb.innerHTML = `
+        <div class="result-rlabel">✓ No Deadlock Found</div>
+        <div class="result-title">No Deadlock Detected</div>
+        <div class="safe-seq">${result.sequence.map((p, i) => `<span class="seq-chip" style="animation-delay:${i*0.1}s">${p}</span>`).join(' <span class="seq-arr">→</span> ')}</div>
+        <p class="result-sub">All processes can complete. The system is in a SAFE state.</p>`;
+        body.appendChild(rb);
+    } else {
+        let rb = document.createElement('div'); rb.className = 'result-box result-unsafe';
+        let seqHtml = result.sequence.length > 0
+        ? result.sequence.map((p, i) => `<span class="seq-chip" style="animation-delay:${i*0.1}s">${p}</span>`).join(' <span class="seq-arr">→</span> ')
+        : '<span style="color:var(--ink3);font-size:13px;">No process could execute</span>';
+        rb.innerHTML = `
+        <div class="result-rlabel">⚠ Deadlock Detected</div>
+        <div class="result-title">Deadlock Found</div>
+        <div class="safe-seq">${seqHtml}</div>
+        <p class="result-sub">Execution stops above. The following processes are stuck.</p>`;
+        let detail = document.createElement('div'); detail.className = 'deadlock-detail';
+        let dtitle = document.createElement('div'); dtitle.className = 'deadlock-detail-title';
+        dtitle.innerText = `Blocked Processes (${result.deadlocked.length})`;
+        detail.appendChild(dtitle);
+        result.blockedReasons.forEach(item => {
+            let row = document.createElement('div'); row.className = 'deadlock-reason';
+            row.innerHTML = `<strong>${item.process}</strong> blocked: ${item.reasons.join(' · ')}`;
+            detail.appendChild(row);
+        });
+        rb.appendChild(detail);
+        let expBox = document.createElement('div');
+        expBox.className = 'step-explanation';
+        expBox.style.marginTop = '14px';
+        expBox.innerHTML = `Deadlock occurs because these processes form a <strong>circular wait</strong>: each holds some resources while requesting others that are unavailable. Since no process can proceed, the system is stuck.`;
+        rb.appendChild(expBox);
+        let recoverBtn = document.createElement('button');
+        recoverBtn.className = 'btn btn-danger';
+        recoverBtn.style.marginTop = '14px';
+        recoverBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Recover from Deadlock`;
+        recoverBtn.onclick = recoverDeadlock;
+        rb.appendChild(recoverBtn);
+        body.appendChild(rb);
+    }
+}
+
+// Highlights a specific allocation table row with a pulse animation
+function highlightRow(index) {
+    let rows = document.querySelectorAll('#allocation-table tbody tr');
+    rows.forEach(r => r.classList.remove('row-active'));
+    let row = rows[index];
+    if (!row) return;
+    row.classList.add('row-active');
+    row.style.animation = 'pulse 0.6s ease';
+    setTimeout(() => { row.style.animation = ''; }, 600);
+}
+
+// Removes the active highlight from all allocation table rows
+function clearHighlight() {
+    let rows = document.querySelectorAll('#allocation-table tbody tr');
+    rows.forEach(r => r.classList.remove('row-active'));
+}
+
+// Resets all simulation outputs, inputs, highlights, and RAG canvas to their initial state
+function resetSimulation() {
+    document.getElementById('output').innerHTML = '';
+    document.getElementById('output').style.display = 'none';
+    document.getElementById('diffPanel').style.display = 'none';
+    document.getElementById('diffPanel').innerHTML = '';
+    document.querySelectorAll('table input').forEach(i => i.value = 0);
+    document.querySelectorAll('.avail-input').forEach(i => i.value = 0);
+    document.getElementById('runBtn').disabled = false;
+    document.getElementById('runBtn').innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg> Run Safety Algorithm`;
+    clearHighlight();
+    document.querySelectorAll('#need-table input').forEach(i => { i.style.background = ''; i.style.border = ''; });
+    document.querySelectorAll('#allocation-table input, #maximum-table input').forEach(i => { i.style.border = ''; });
+    let sb = document.getElementById('statusBox'); sb.innerHTML = ''; sb.classList.remove('status-success','status-error');
+    document.getElementById('rag-section').style.display = 'none';
+    _stopRAG();
+    let canvas = document.getElementById('ragCanvas');
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// Binds the speed control slider to update simulation delay on page load
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('speedControl').addEventListener('input', function() {
+        simulationSpeed = 2200 - parseInt(this.value);
+        document.getElementById('speedValue').innerText = (simulationSpeed / 1000).toFixed(1) + 's';
+    });
+});
