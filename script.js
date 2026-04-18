@@ -336,3 +336,148 @@ function renderDiff(pi, allocBefore, allocAfter, needBefore, needAfter, availBef
     panel.appendChild(inner);
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
+
+// Fills allocation, maximum, and available tables with given values and refreshes the need matrix
+function fillTables(alloc, max, avail) {
+    let at = document.getElementById('allocation-table'), mt = document.getElementById('maximum-table');
+    let ai = document.querySelectorAll('#available-section .avail-input');
+    for (let i = 0; i < alloc.length; i++)
+        for (let j = 0; j < alloc[i].length; j++) {
+            at.tBodies[0].rows[i].cells[j+1].children[0].value = alloc[i][j];
+            mt.tBodies[0].rows[i].cells[j+1].children[0].value = max[i][j];
+        }
+    avail.forEach((v, j) => ai[j].value = v);
+    updateNeedMatrix();
+}
+
+// Checks if the system is in a safe state using the Banker's Algorithm safety sequence
+function checkSafety(alloc, need, avail) {
+    let p = alloc.length, r = avail.length, work = [...avail], finish = new Array(p).fill(false);
+    while (true) {
+        let found = false;
+        for (let i = 0; i < p; i++) {
+            if (!finish[i] && need[i].every((n, j) => n <= work[j])) {
+                work = work.map((w, j) => w + alloc[i][j]); finish[i] = true; found = true;
+            }
+        }
+        if (!found) break;
+    }
+    return finish.every(Boolean);
+}
+
+// Initiates the safety algorithm simulation, draws the RAG, and restores the button on completion
+function startSimulation() {
+    let btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Running…`;
+    let out = document.getElementById('output');
+    out.style.display = 'block';
+    out.innerHTML = '';
+    let alloc = getMatrix('allocation-table');
+    let max = getMatrix('maximum-table');
+    let avail = getAvailable();
+    let need = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
+    drawRAG(alloc, need);
+    document.getElementById('rag-section').style.display = 'block';
+    simulateSafety(alloc, need, avail, () => {
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3l14 9-14 9V3z"/></svg> Run Safety Algorithm`;
+    });
+}
+
+// Animates the Banker's Algorithm step-by-step, logging each process check and displaying the final safe or unsafe state
+function simulateSafety(alloc, need, avail, callback) {
+    let p = alloc.length, r = avail.length, work = [...avail];
+    let finish = new Array(p).fill(false), seq = [], step = 0;
+    let out = document.getElementById('output');
+    out.innerHTML = '';
+    let wrapper = document.createElement('div'); wrapper.className = 'sim-output';
+    let hdr = document.createElement('div'); hdr.className = 'sim-output-header';
+    hdr.innerHTML = `<span class="card-title-dot"></span><span class="sim-output-title">Simulation Log</span><span style="font-family:var(--f-mono);font-size:9px;color:var(--ink3);margin-left:auto;">04 / STEP-BY-STEP</span>`;
+    wrapper.appendChild(hdr);
+    let body = document.createElement('div'); body.className = 'sim-output-body';
+    wrapper.appendChild(body);
+    out.appendChild(wrapper);
+    let intro = document.createElement('div'); intro.className = 'step-explanation';
+    intro.innerHTML = `Safety Algorithm initializes <span class="hl-white">Work = Available = [${work.join(', ')}]</span> with all processes unfinished. It scans for any process whose <span class="hl-green">Need ≤ Work</span>. When found, that process executes and returns its allocation back to Work.`;
+    body.appendChild(intro);
+
+    function nextStep() {
+        let found = false;
+        for (let i = 0; i < p; i++) {
+            let checkDiv = document.createElement('div');
+            checkDiv.className = 'check-div';
+            let comparison = need[i].map((n, j) => `R${j}: ${n} ≤ ${work[j]} ${n <= work[j] ? '✅' : '❌'}`).join('  |  ');
+            checkDiv.innerHTML = `Checking P${i}: Need=[${need[i].join(', ')}] &nbsp; Work=[${work.join(', ')}] &nbsp;&nbsp; ${comparison}`;
+            body.appendChild(checkDiv);
+            if (!finish[i] && need[i].every((n, j) => n <= work[j])) {
+                highlightRow(i);
+                let prevWork = [...work];
+                work = work.map((w, j) => w + alloc[i][j]);
+                finish[i] = true; seq.push('P' + i);
+                setTimeout(() => { clearHighlight(); }, simulationSpeed - 200);
+                let card = document.createElement('div'); card.className = 'step-card active-step';
+                let top = document.createElement('div'); top.className = 'step-card-top';
+                let badge = document.createElement('span'); badge.className = 'step-badge'; badge.innerText = 'STEP ' + String(++step).padStart(2, '0');
+                let proc = document.createElement('span'); proc.className = 'step-proc';
+                proc.innerHTML = `⚡ <b>P${i}</b> EXECUTING`;
+                top.appendChild(badge); top.appendChild(proc); card.appendChild(top);
+                let exp = document.createElement('div'); exp.className = 'step-explanation';
+                exp.innerHTML = `Need of P${i} is <span class="hl-white">[${need[i].join(', ')}]</span> and Work was <span class="hl-white">[${prevWork.join(', ')}]</span> — since <span class="hl-green">Need ≤ Work</span> for all resources, P${i} can proceed. After it finishes, it releases allocation <span class="hl-white">[${alloc[i].join(', ')}]</span> back. Work becomes: <span class="hl-green">[${work.join(', ')}]</span>.`;
+                card.appendChild(exp);
+                let workRow = document.createElement('div'); workRow.className = 'step-work-row';
+                let wlabel = document.createElement('span'); wlabel.className = 'step-work-label'; wlabel.innerText = 'Work →';
+                let chips = document.createElement('div'); chips.className = 'step-work-chips';
+                work.forEach((v, j) => {
+                    let c = document.createElement('span'); c.className = 'step-work-chip';
+                    c.style.animationDelay = (j * 0.06) + 's';
+                    c.innerText = 'R' + j + ': ' + v;
+                    chips.appendChild(c);
+                });
+                workRow.appendChild(wlabel); workRow.appendChild(chips); card.appendChild(workRow);
+                body.appendChild(card);
+                setTimeout(() => card.classList.remove('active-step'), 700);
+                found = true;
+                setTimeout(nextStep, simulationSpeed);
+                return;
+            }
+        }
+        if (!found) {
+            clearHighlight();
+            let isSafe = finish.every(Boolean);
+            let rb = document.createElement('div'); rb.className = 'result-box ' + (isSafe ? 'result-safe' : 'result-unsafe');
+            let rl = document.createElement('div'); rl.className = 'result-rlabel';
+            rl.innerText = isSafe ? '✓ Safe State Detected' : '⚠ Unsafe State Detected';
+            let rt = document.createElement('div'); rt.className = 'result-title';
+            rt.innerText = isSafe ? '✅ SYSTEM IS IN SAFE STATE' : '❌ SYSTEM IS IN UNSAFE STATE';
+            rb.appendChild(rl); rb.appendChild(rt);
+            if (isSafe) {
+                let seqLabel = document.createElement('div');
+                seqLabel.style.fontFamily = 'var(--f-mono)';
+                seqLabel.style.fontSize = '11px';
+                seqLabel.style.marginBottom = '8px';
+                seqLabel.innerText = 'Safe Sequence:';
+                rb.appendChild(seqLabel);
+                let ss = document.createElement('div'); ss.className = 'safe-seq';
+                seq.forEach((name, idx) => {
+                    let chip = document.createElement('span'); chip.className = 'seq-chip';
+                    chip.style.animationDelay = (idx * 0.12) + 's'; chip.innerText = name; ss.appendChild(chip);
+                    if (idx < seq.length - 1) { let arr = document.createElement('span'); arr.className = 'seq-arr'; arr.innerText = '→'; ss.appendChild(arr); }
+                });
+                rb.appendChild(ss);
+                let sub = document.createElement('p'); sub.className = 'result-sub';
+                sub.innerText = 'All ' + p + ' processes completed successfully. A valid safe sequence exists — the system is deadlock-free.';
+                rb.appendChild(sub);
+            } else {
+                let sub = document.createElement('p'); sub.className = 'result-sub';
+                let done = finish.filter(Boolean).length;
+                sub.innerText = `Only ${done} out of ${p} processes could complete. Remaining processes cannot proceed because required resources are not available. This results in an unsafe state and possible deadlock.`;
+                rb.appendChild(sub);
+            }
+            body.appendChild(rb);
+            rb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (callback) callback();
+        }
+    }
+    nextStep();
+}
