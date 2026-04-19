@@ -313,3 +313,54 @@ table input:disabled {background: rgba(217,119,6,0.05); color: var(--amber); bor
 
 .need-card {background: var(--surface); border: 1px solid rgba(217,119,6,0.20); border-radius: var(--r2); padding: 20px; box-shadow: var(--shadow-sm); position: relative;}
 .req-label {font-size: 11px; font-weight: 600; color: var(--ink3); letter-spacing: 0.05em; text-transform: uppercase; display: block; margin-bottom: 6px;}
+
+/* =========================
+    15. VISUALIZATION (RAG)
+========================= */
+
+.rag-container {background: var(--surface); border: 1px solid var(--border); border-radius: var(--r2); padding: 20px; box-shadow: var(--shadow-sm);}
+.rag-header {display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px;}
+.rag-legend {display: flex; gap: 14px; align-items: center;}
+.rag-legend-item {display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; color: var(--ink3);}
+.rag-legend-line {width: 20px; height: 2px; border-radius: 1px;}
+#ragCanvas {width: 100%; height: auto; border-radius: var(--r); background: transparent; display: block;}
+
+/* =========================
+    16. ANIMATIONS
+========================= */
+
+@keyframes fadeUp {from {opacity: 0; transform: translateY(12px);} to {opacity: 1; transform: translateY(0);}}
+@keyframes slideInLeft {from {opacity: 0; transform: translateX(-14px);} to {opacity: 1; transform: translateX(0);}}
+@keyframes chipPop {0% {opacity: 0; transform: scale(0.65) translateY(5px);} 60% {transform: scale(1.08) translateY(-2px);} 100% {opacity: 1; transform: scale(1) translateY(0);}}
+@keyframes cellPulse {0% {transform: scale(1);} 40% {transform: scale(1.08);} 100% {transform: scale(1);}}
+
+.pulse-dot {width: 6px; height: 6px; border-radius: 50%; background: var(--indigo); animation: pulse-dot 2s ease infinite;}
+@keyframes pulse-dot {0%, 100% {opacity: 1; transform: scale(1);} 50% {opacity: 0.4; transform: scale(0.6);}}
+
+/* =========================
+    17. RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {.app-layout {grid-template-columns: 1fr;} .sidebar {position: static;}}
+@media (max-width: 640px) {.matrices-grid, .diff-matrices {grid-template-columns: 1fr;} .concept-strip {grid-template-columns: 1fr 1fr;} .hero {grid-template-columns: 1fr;} .hero-right {flex-direction: row;} .page-wrap {padding: 0 16px 60px;}}
+
+/* =========================
+    18. UTILITIES
+========================= */
+
+.hl-green { color: var(--green); font-weight: 600; font-family: var(--f-mono); font-size: 11px; }
+.hl-red { color: var(--red); font-weight: 600; font-family: var(--f-mono); font-size: 11px; }
+.hl-white { color: var(--ink); font-weight: 600; font-family: var(--f-mono); font-size: 11px; }
+
+[data-tip] {position: relative; cursor: help;}
+[data-tip]::after {content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--ink); color: white; font-family: var(--f-body); font-size: 11px; font-weight: 400; padding: 6px 10px; border-radius: 6px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 50; max-width: 220px; white-space: normal; text-align: center;}
+[data-tip]:hover::after {opacity: 1;}
+
+::-webkit-scrollbar {width: 5px; height: 5px;}
+::-webkit-scrollbar-track {background: var(--bg);}
+::-webkit-scrollbar-thumb {background: rgba(0,0,0,0.15); border-radius: 3px;}
+::-webkit-scrollbar-thumb:hover {background: rgba(79,70,229,0.35);}
+
+.mdot {display: none;}
+#workPanel {display: none;}
+#workValues {display: none;}
