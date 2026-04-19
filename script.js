@@ -617,3 +617,46 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('speedValue').innerText = (simulationSpeed / 1000).toFixed(1) + 's';
     });
 });
+
+// Recovers deadlock by terminating the first deadlocked process and releasing its resources
+function recoverDeadlock() {
+    let alloc = getMatrix('allocation-table');
+    let max = getMatrix('maximum-table');
+    let avail = getAvailable();
+    let result = detectDeadlockDetailed(alloc, max, avail);
+    if (result.deadlocked.length === 0) {
+        alert('No deadlock to recover from.');
+        return;
+    }
+    let processToKill = parseInt(result.deadlocked[0].replace('P', ''));
+    let r = avail.length;
+    for (let j = 0; j < r; j++) {
+        avail[j] += alloc[processToKill][j];
+        alloc[processToKill][j] = 0;
+    }
+    fillTables(alloc, max, avail);
+    let out = document.getElementById('output');
+    out.style.display = 'block';
+    let wrapper = document.createElement('div');
+    wrapper.className = 'sim-output';
+    let hdr = document.createElement('div');
+    hdr.className = 'sim-output-header';
+    hdr.innerHTML = `
+        <span class="card-title-dot" style="background:var(--teal)"></span>
+        <span class="sim-output-title">Recovery Complete</span>`;
+    wrapper.appendChild(hdr);
+    let body = document.createElement('div');
+    body.className = 'sim-output-body';
+    let rb = document.createElement('div');
+    rb.className = 'result-box result-safe';
+    rb.innerHTML = `
+        <div class="result-rlabel">✓ Recovered</div>
+        <div class="result-title">Deadlock Recovered</div>
+        <p class="result-sub">Process P${processToKill} was terminated, releasing its resources. System tables updated. Re-run the Safety Algorithm to verify.</p>`;
+    body.appendChild(rb);
+    wrapper.appendChild(body);
+    out.innerHTML = '';
+    out.appendChild(wrapper);
+    let need = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
+    drawRAG(alloc, need);
+}
