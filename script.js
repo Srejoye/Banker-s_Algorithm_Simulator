@@ -660,3 +660,91 @@ function recoverDeadlock() {
     let need = alloc.map((row, i) => row.map((v, j) => max[i][j] - v));
     drawRAG(alloc, need);
 }
+
+// Draws the Resource Allocation Graph (RAG) on canvas with process/resource nodes and edges
+function drawRAG(alloc, need) {
+    const canvas = document.getElementById("ragCanvas");
+    const ctx = canvas.getContext("2d");
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || canvas.width;
+    const cssH = canvas.clientHeight || canvas.height;
+    canvas.width = cssW * dpr;
+    canvas.height = cssH * dpr;
+    ctx.scale(dpr, dpr);
+    const W = cssW;
+    const H = cssH;
+    ctx.clearRect(0, 0, W, H);
+    const p = alloc.length;
+    const r = alloc[0].length;
+    const pGap = 120;
+    const rGap = 120;
+    const pStart = (W - (p - 1) * pGap) / 2;
+    const rStart = (W - (r - 1) * rGap) / 2;
+    const pY = 140;
+    const rY = 320;
+    let pPos = [];
+    for (let i = 0; i < p; i++) {
+        let x = pStart + i * pGap;
+        pPos.push({ x, y: pY });
+        ctx.save();
+        ctx.shadowColor = "#6366f1";
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(x, pY, 26, 0, Math.PI * 2);
+        ctx.fillStyle = "#6366f1";
+        ctx.fill();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.arc(x, pY, 26, 0, Math.PI * 2);
+        ctx.strokeStyle = "#1e1b4b";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = "bold 13px monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "white";
+        ctx.fillText("P" + i, x, pY);
+    }
+    let rPos = [];
+    for (let j = 0; j < r; j++) {
+        let x = rStart + j * rGap;
+        rPos.push({ x, y: rY });
+        ctx.save();
+        ctx.shadowColor = "#8b5cf6";
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = "#8b5cf6";
+        ctx.beginPath();
+        ctx.roundRect(x - 26, rY - 26, 52, 52, 6);
+        ctx.fill();
+        ctx.restore();
+        ctx.beginPath();
+        ctx.roundRect(x - 26, rY - 26, 52, 52, 6);
+        ctx.strokeStyle = "#4c1d95";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.font = "bold 13px monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "white";
+        ctx.fillText("R" + j, x, rY);
+    }
+    for (let i = 0; i < p; i++) {
+        for (let j = 0; j < r; j++) {
+            if (alloc[i][j] > 0) {
+                const sign = ((i + j) % 2 === 0) ? -1 : 1;
+                const offset = sign * (30 + (i * r + j) * 10);
+                drawCurve(ctx, rPos[j].x, rPos[j].y - 26, pPos[i].x, pPos[i].y + 26, offset, "#16a34a");
+            }
+        }
+    }
+    for (let i = 0; i < p; i++) {
+        for (let j = 0; j < r; j++) {
+            if (need[i][j] > 0) {
+                const sign = ((i + j) % 2 === 0) ? 1 : -1;
+                const offset = sign * (30 + (i * r + j) * 10);
+                drawCurve(ctx, pPos[i].x, pPos[i].y + 26, rPos[j].x, rPos[j].y - 26, offset, "#dc2626");
+            }
+        }
+    }
+    drawBadgeLegend(ctx, W, H);
+}
