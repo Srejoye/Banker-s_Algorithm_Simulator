@@ -769,3 +769,41 @@ function drawCurve(ctx, x1, y1, x2, y2, offset, color) {
     ctx.fillStyle = color;
     ctx.fill();
 }
+
+// Renders a pill-style legend at the bottom of the canvas for allocation and request edges
+function drawBadgeLegend(ctx, W, H) {
+    const items = [
+        { label: "Allocation  R → P", color: "#16a34a", bg: "#dcfce7", border: "#16a34a" },
+        { label: "Request  P → R",    color: "#991b1b", bg: "#fee2e2", border: "#dc2626" },
+    ];
+    const badgeH = 22;
+    const padX = 14;
+    const padY = 6;
+    const gap = 10;
+    ctx.font = "11px sans-serif";
+    let totalW = 0;
+    const widths = items.map(item => {
+        const tw = ctx.measureText(item.label).width;
+        return tw + padX * 2;
+    });
+    totalW = widths.reduce((a, b) => a + b, 0) + gap * (items.length - 1);
+    let bx = (W - totalW) / 2;
+    const by = H - badgeH - padY;
+    for (let i = 0; i < items.length; i++) {
+        const { label, color, bg, border } = items[i];
+        const bw = widths[i];
+        ctx.beginPath();
+        ctx.roundRect(bx, by, bw, badgeH, badgeH / 2);
+        ctx.fillStyle = bg;
+        ctx.fill();
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, bx + bw / 2, by + badgeH / 2);
+        bx += bw + gap;
+    }
+}
