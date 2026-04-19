@@ -748,3 +748,24 @@ function drawRAG(alloc, need) {
     }
     drawBadgeLegend(ctx, W, H);
 }
+
+// Draws a quadratic bezier curve with an arrowhead between two points
+function drawCurve(ctx, x1, y1, x2, y2, offset, color) {
+    const cx = (x1 + x2) / 2 + offset;
+    const cy = (y1 + y2) / 2;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.quadraticCurveTo(cx, cy, x2, y2);
+    ctx.stroke();
+    const angle = Math.atan2(y2 - cy, x2 - cx);
+    const head = 10;
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - head * Math.cos(angle - Math.PI / 6), y2 - head * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(x2 - head * Math.cos(angle + Math.PI / 6), y2 - head * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+}
